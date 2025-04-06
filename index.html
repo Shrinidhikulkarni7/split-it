@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split it</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f6d5f7 0%, #fbe9d7 50%, #b9e4c9 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #2d3748;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path fill="rgba(255, 255, 255, 0.4)" d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.6,90,-16.3,88.5,-0.9C87,14.6,81.4,29.2,74.1,43.2C66.7,57.2,57.6,70.6,44.7,77.9C31.8,85.3,15.9,86.6,0.7,85.5C-14.5,84.4,-29,80.9,-42.2,73.7C-55.4,66.5,-67.3,55.6,-75.6,42.2C-84,28.8,-88.8,14.4,-88.3,0.3C-87.8,-13.8,-82,-27.6,-74.3,-40.3C-66.6,-53,-57,-64.6,-44.3,-72.4C-31.6,-80.2,-15.8,-84.2,-0.2,-83.8C15.3,-83.5,30.6,-83.7,44.7,-76.4Z" transform="translate(100 100)" /></svg>') no-repeat center center;
+            background-size: 80% 80%;
+            opacity: 0.1;
+            z-index: -1;
+            animation: rotate 60s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            font-weight: 600;
+            font-size: 2.5rem;
+            color: #1a202c;
+            letter-spacing: -0.5px;
+        }
+
+        .emoji-gold {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            font-size: 2rem;
+        }
+
+        .select-all-container {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .select-all-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .select-all-label:hover {
+            background: #edf2f7;
+        }
+
+        .input-section {
+            display: grid;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input, select {
+            padding: 0.8rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            color: #2d3748;
+            width: 100%;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #7C9EBF;
+            box-shadow: 0 0 0 3px rgba(124, 158, 191, 0.2);
+            transform: translateY(-2px);
+        }
+
+        input::placeholder {
+            color: #718096;
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(45deg, #7C9EBF, #6B8EAF);
+            color: white;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(45deg, #6B8EAF, #5A7D9E);
+        }
+
+        .participants {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            padding: 1.2rem;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .participant-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: white;
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .participant-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .results {
+            background: white;
+            color: #2d3748;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-top: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .transaction {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .transaction:hover {
+            background: #f8fafc;
+            transform: translateX(4px);
+        }
+
+        .report-section {
+            border-top: 1px solid #e2e8f0;
+            margin-top: 2rem;
+            padding-top: 2rem;
+        }
+
+        .report-content {
+            background: white;
+            color: #2d3748;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .expense-item {
+            position: relative;
+            padding: 1.2rem;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .expense-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .add-person-section {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .add-person-section input {
+            flex: 1;
+        }
+
+        .person-remove-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: #FC8181;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin-left: 5px;
+        }
+
+        .person-remove-btn:hover {
+            background: #F56565;
+            transform: scale(1.1);
+        }
+
+        .amount-positive {
+            color: #38A169;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .amount-positive::before {
+            content: '↑';
+            font-size: 0.9em;
+        }
+
+        .amount-negative {
+            color: #E53E3E;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .amount-negative::before {
+            content: '↓';
+            font-size: 0.9em;
+        }
+
+        h2 {
+            color: #1a202c;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: #2d3748;
+            font-size: 1.25rem;
+            margin: 1.5rem 0 1rem;
+            font-weight: 500;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        .danger-button {
+            background: linear-gradient(45deg, #FF8B9A, #FF7B8A);
+        }
+
+        .danger-button:hover {
+            background: linear-gradient(45deg, #FF7B8A, #FF6B7A);
+        }
+
+        .secondary-button {
+            background: linear-gradient(45deg, #B8A7E0, #A897D0);
+        }
+
+        .secondary-button:hover {
+            background: linear-gradient(45deg, #A897D0, #9887C0);
+        }
+
+        .delete-expense {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #FC8181;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .expense-item:hover .delete-expense {
+            opacity: 1;
+        }
+
+        .delete-expense:hover {
+            background: #F56565;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem;
+            background: rgba(45, 55, 72, 0.95);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            z-index: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add some spacing between form elements */
+        .input-group > * {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Custom checkbox styling */
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid #7C9EBF;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        input[type="checkbox"]:checked {
+            background: #7C9EBF;
+            border-color: #7C9EBF;
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 1.5rem;
+            }
+
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji-gold">✨</span> Split it <span class="emoji-gold">✨</span></h1>
+        
+        <div class="add-person-section">
+            <input type="text" id="newPersonName" placeholder="Enter name">
+            <button onclick="addPerson()">Add Person</button>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <select id="payer"></select>
+                <input type="text" id="description" placeholder="Expense description">
+                <input type="number" id="amount" placeholder="Amount">
+                <input type="date" id="expenseDate">
+            </div>
+            
+            <div class="select-all-container">
+                <label class="select-all-label">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()"> Select All Participants
+                </label>
+            </div>
+            
+            <div class="participants" id="participantsList">
+            </div>
+            
+            <div class="button-group">
+                <button onclick="addExpense()">Add Expense</button>
+                <button onclick="generateReport()">Generate Report</button>
+                <button class="danger-button" onclick="clearData()">Clear All Data</button>
+                <button class="secondary-button" onclick="toggleReport()">Toggle Report</button>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <h2>Balances</h2>
+            <div id="balanceResults"></div>
+        </div>
+
+        <div class="report-section" id="reportSection" style="display: none;">
+            <h2>Expense Report</h2>
+            <div class="report-content" id="reportContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let expenses = [];
+        let participants = [];
+
+        // Load participants from localStorage or start with empty array
+        function initializeApp() {
+            const savedParticipants = localStorage.getItem('participants');
+            if (savedParticipants) {
+                participants = JSON.parse(savedParticipants);
+            }
+            const savedExpenses = localStorage.getItem('expenses');
+            if (savedExpenses) {
+                expenses = JSON.parse(savedExpenses).map(expense => ({
+                    ...expense,
+                    date: new Date(expense.date)
+                }));
+            }
+            updateParticipantsUI();
+            if (expenses.length > 0) {
+                calculateBalances();
+            }
+            // Set default date to today
+            document.getElementById('expenseDate').valueAsDate = new Date();
+        }
+
+        function saveTolocalStorage() {
+            localStorage.setItem('participants', JSON.stringify(participants));
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
+
+        function addPerson() {
+            const nameInput = document.getElementById('newPersonName');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+
+            if (participants.includes(name)) {
+                alert('This person is already added');
+                return;
+            }
+
+            participants.push(name);
+            nameInput.value = '';
+            updateParticipantsUI();
+            saveTolocalStorage();
+        }
+
+        function removePerson(name) {
+            if (expenses.some(e => e.payer === name || e.participants.includes(name))) {
+                alert('Cannot remove this person as they are involved in expenses');
+                return;
+            }
+            participants = participants.filter(p => p !== name);
+            updateParticipantsUI();
+            saveTolocalStorage();
+        }
+
+        function updateParticipantsUI() {
+            // Update payer select
+            const payerSelect = document.getElementById('payer');
+            payerSelect.innerHTML = participants.map(name => 
+                `<option value="${name}">${name}</option>`
+            ).join('');
+
+            // Update participants checkboxes
+            const participantsList = document.getElementById('participantsList');
+            participantsList.innerHTML = participants.map(name => `
+                <label class="participant-label">
+                    <input type="checkbox" name="participant" value="${name}" onchange="updateSelectAllState()"> ${name}
+                    <button class="person-remove-btn" onclick="removePerson('${name}')" title="Remove ${name}">×</button>
+                </label>
+            `).join('');
+
+            // Reset select all checkbox
+            const selectAllCheckbox = document.getElementById('selectAll');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const participantCheckboxes = document.querySelectorAll('input[name="participant"]');
+            
+            participantCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+
+        function updateSelectAllState() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const participantCheckboxes = document.querySelectorAll('input[name="participant"]');
+            const allChecked = Array.from(participantCheckboxes).every(checkbox => checkbox.checked);
+            const anyChecked = Array.from(participantCheckboxes).some(checkbox => checkbox.checked);
+            
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+        }
+
+        function addExpense() {
+            const payer = document.getElementById('payer').value;
+            const description = document.getElementById('description').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const selectedParticipants = Array.from(document.querySelectorAll('input[name="participant"]:checked'))
+                                     .map(p => p.value);
+            const expenseDate = new Date(document.getElementById('expenseDate').value);
+
+            if (!payer) {
+                alert('Please add at least one person first');
+                return;
+            }
+
+            if (!description || !amount || selectedParticipants.length === 0) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            const expense = {
+                payer,
+                description,
+                amount,
+                participants: selectedParticipants,
+                date: expenseDate
+            };
+
+            expenses.push(expense);
+            calculateBalances();
+            saveTolocalStorage();
+            
+            // Clear input fields
+            document.getElementById('description').value = '';
+            document.getElementById('amount').value = '';
+            document.querySelectorAll('input[name="participant"]').forEach(cb => cb.checked = false);
+
+            // Update report if visible
+            if (document.getElementById('reportSection').style.display !== 'none') {
+                generateReport();
+            }
+        }
+
+        function calculateBalances() {
+            const balances = {};
+            participants.forEach(p => balances[p] = 0);
+
+            // Calculate balances
+            expenses.forEach(expense => {
+                const share = expense.amount / expense.participants.length;
+                expense.participants.forEach(participant => {
+                    balances[participant] -= share;
+                });
+                balances[expense.payer] += expense.amount;
+            });
+
+            // Display individual balances
+            const resultsDiv = document.getElementById('balanceResults');
+            let balanceHTML = '<h3>Individual Balances:</h3>';
+            for (const person in balances) {
+                const amount = balances[person].toFixed(2);
+                const amountClass = balances[person] >= 0 ? 'amount-positive' : 'amount-negative';
+                balanceHTML += `<div class="transaction">
+                    <span>${person}</span>
+                    <span class="${amountClass}">₹${amount}</span>
+                </div>`;
+            }
+
+            // Simplify debts
+            const transactions = [];
+            const people = Object.keys(balances);
+
+            while (true) {
+                let maxCreditor = null;
+                let maxDebtor = null;
+                
+                for (const person of people) {
+                    if (balances[person] > 0 && (!maxCreditor || balances[person] > balances[maxCreditor])) {
+                        maxCreditor = person;
+                    }
+                    if (balances[person] < 0 && (!maxDebtor || balances[person] < balances[maxDebtor])) {
+                        maxDebtor = person;
+                    }
+                }
+
+                if (!maxCreditor || !maxDebtor || 
+                    Math.abs(balances[maxCreditor]) < 0.01 || 
+                    Math.abs(balances[maxDebtor]) < 0.01) break;
+
+                const amount = Math.min(balances[maxCreditor], -balances[maxDebtor]);
+                transactions.push({
+                    from: maxDebtor,
+                    to: maxCreditor,
+                    amount: amount.toFixed(2)
+                });
+
+                balances[maxCreditor] -= amount;
+                balances[maxDebtor] += amount;
+            }
+
+            // Add settlement transactions
+            balanceHTML += '<h3>Settlement Transactions:</h3>';
+            if (transactions.length === 0) {
+                balanceHTML += '<p>No balances to settle! 🎉</p>';
+            } else {
+                transactions.forEach(t => {
+                    balanceHTML += `
+                        <div class="transaction">
+                            <span>${t.from} owes ${t.to}</span>
+                            <span class="amount-negative">₹${t.amount}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            resultsDiv.innerHTML = balanceHTML;
+        }
+
+        function deleteExpense(index) {
+            if (confirm('Are you sure you want to delete this expense?')) {
+                expenses.splice(index, 1);
+                saveTolocalStorage();
+                calculateBalances();
+                generateReport();
+            }
+        }
+
+        function clearData() {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone!')) {
+                expenses = [];
+                participants = [];
+                localStorage.removeItem('expenses');
+                localStorage.removeItem('participants');
+                updateParticipantsUI();
+                calculateBalances();
+                document.getElementById('reportSection').style.display = 'none';
+            }
+        }
+
+        function toggleReport() {
+            const reportSection = document.getElementById('reportSection');
+            if (reportSection.style.display === 'none') {
+                generateReport();
+            } else {
+                reportSection.style.display = 'none';
+            }
+        }
+
+        function generateReport() {
+            const reportSection = document.getElementById('reportSection');
+            const reportContent = document.getElementById('reportContent');
+            reportSection.style.display = 'block';
+
+            if (expenses.length === 0) {
+                reportContent.innerHTML = '<p>No expenses recorded yet.</p>';
+                return;
+            }
+
+            const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2);
+            let reportHTML = `
+                <h3>Expense Summary</h3>
+                <p>Total Expenses: ₹${totalExpenses}</p>
+                <h3>Detailed Expenses</h3>
+            `;
+
+            // Sort expenses by date (newest first)
+            const sortedExpenses = [...expenses].sort((a, b) => b.date - a.date);
+
+            sortedExpenses.forEach((expense, index) => {
+                const date = expense.date.toLocaleDateString();
+                const share = (expense.amount / expense.participants.length).toFixed(2);
+                
+                // HTML display with delete button
+                reportHTML += `
+                    <div class="expense-item tooltip" data-tooltip="Click × to delete">
+                        <strong>${expense.description}</strong><br>
+                        Date: ${date}<br>
+                        Paid by: ${expense.payer}<br>
+                        Amount: ₹${expense.amount}<br>
+                        Split between: ${expense.participants.join(', ')}<br>
+                        Each person's share: ₹${share}
+                        <button class="delete-expense" onclick="deleteExpense(${index})" title="Delete expense">×</button>
+                    </div>
+                `;
+            });
+
+            reportContent.innerHTML = reportHTML;
+            
+            // Generate and save text report
+            generateTextReport(sortedExpenses, totalExpenses);
+        }
+
+        function generateTextReport(sortedExpenses, totalExpenses) {
+            let textContent = `SPLIT IT - EXPENSE REPORT\n`;
+            textContent += `Generated on: ${new Date().toLocaleString()}\n\n`;
+            textContent += `TOTAL EXPENSES: ₹${totalExpenses}\n\n`;
+            textContent += `DETAILED EXPENSES:\n`;
+            textContent += `----------------\n\n`;
+
+            sortedExpenses.forEach(expense => {
+                const date = expense.date.toLocaleDateString();
+                const share = (expense.amount / expense.participants.length).toFixed(2);
+
+                textContent += `Description: ${expense.description}\n`;
+                textContent += `Date: ${date}\n`;
+                textContent += `Paid by: ${expense.payer}\n`;
+                textContent += `Amount: ₹${expense.amount}\n`;
+                textContent += `Split between: ${expense.participants.join(', ')}\n`;
+                textContent += `Each person's share: ₹${share}\n`;
+                textContent += `----------------\n\n`;
+            });
+
+            // Add balances to the text file
+            textContent += `CURRENT BALANCES:\n`;
+            textContent += `----------------\n`;
+            const balances = {};
+            participants.forEach(p => balances[p] = 0);
+
+            expenses.forEach(expense => {
+                const share = expense.amount / expense.participants.length;
+                expense.participants.forEach(participant => {
+                    balances[participant] -= share;
+                });
+                balances[expense.payer] += expense.amount;
+            });
+
+            for (const person in balances) {
+                const amount = balances[person].toFixed(2);
+                textContent += `${person}: ₹${amount}\n`;
+            }
+
+            // Save the file
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `expense_report_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // Initialize the app when the page loads
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
