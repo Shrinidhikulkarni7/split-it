@@ -1,0 +1,21 @@
+{
+    "name": "Split it",
+    "short_name": "Split it",
+    "description": "A simple expense splitting application",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f6d5f7",
+    "theme_color": "#7C9EBF",
+    "icons": [
+        {
+            "src": "icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+} 

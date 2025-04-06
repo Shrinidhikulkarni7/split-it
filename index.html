@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Split it</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#7C9EBF">
+    <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -466,6 +469,36 @@
                 width: 100%;
             }
         }
+
+        .statistics-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card h4 {
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        #expenseChart {
+            margin-top: 2rem;
+            max-height: 300px;
+        }
     </style>
 </head>
 <body>
@@ -483,6 +516,21 @@
                 <input type="text" id="description" placeholder="Expense description">
                 <input type="number" id="amount" placeholder="Amount">
                 <input type="date" id="expenseDate">
+                <select id="currency">
+                    <option value="₹">₹ (INR)</option>
+                    <option value="$">$ (USD)</option>
+                    <option value="€">€ (EUR)</option>
+                    <option value="£">£ (GBP)</option>
+                    <option value="¥">¥ (JPY)</option>
+                </select>
+                <select id="category">
+                    <option value="food">🍽️ Food</option>
+                    <option value="travel">✈️ Travel</option>
+                    <option value="utilities">🏠 Utilities</option>
+                    <option value="entertainment">🎮 Entertainment</option>
+                    <option value="shopping">🛍️ Shopping</option>
+                    <option value="other">📦 Other</option>
+                </select>
             </div>
             
             <div class="select-all-container">
@@ -505,10 +553,18 @@
         <div class="results" id="results">
             <h2>Balances</h2>
             <div id="balanceResults"></div>
+            <div class="statistics-section">
+                <h3>Expense Statistics</h3>
+                <div id="expenseStats"></div>
+                <canvas id="expenseChart"></canvas>
+            </div>
         </div>
 
         <div class="report-section" id="reportSection" style="display: none;">
             <h2>Expense Report</h2>
+            <div class="button-group" style="margin-bottom: 1rem;">
+                <button class="secondary-button" onclick="copyReportToClipboard()">Copy to Clipboard</button>
+            </div>
             <div class="report-content" id="reportContent"></div>
         </div>
     </div>
@@ -516,11 +572,14 @@
         Made with ❤️ by <a href="https://shrinidhirkulkarni.surge.sh/" target="_blank" style="color: #7C9EBF; text-decoration: none; font-weight: 500;">Shrinidhi Kulkarni</a>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let expenses = [];
         let participants = [];
+        let currentCurrency = '₹';
+        let expenseChart = null;
 
-        // Load participants from localStorage or start with empty array
+        // Load data from localStorage
         function initializeApp() {
             const savedParticipants = localStorage.getItem('participants');
             if (savedParticipants) {
@@ -533,119 +592,125 @@
                     date: new Date(expense.date)
                 }));
             }
+            const savedCurrency = localStorage.getItem('currency');
+            if (savedCurrency) {
+                currentCurrency = savedCurrency;
+                document.getElementById('currency').value = currentCurrency;
+            }
             updateParticipantsUI();
             if (expenses.length > 0) {
                 calculateBalances();
+                updateExpenseStats();
             }
-            // Set default date to today
             document.getElementById('expenseDate').valueAsDate = new Date();
         }
 
         function saveTolocalStorage() {
             localStorage.setItem('participants', JSON.stringify(participants));
             localStorage.setItem('expenses', JSON.stringify(expenses));
+            localStorage.setItem('currency', currentCurrency);
         }
 
-        function addPerson() {
-            const nameInput = document.getElementById('newPersonName');
-            const name = nameInput.value.trim();
-            
-            if (!name) {
-                alert('Please enter a name');
-                return;
-            }
+        function updateExpenseStats() {
+            const stats = {
+                total: 0,
+                byCategory: {},
+                byMonth: {}
+            };
 
-            if (participants.includes(name)) {
-                alert('This person is already added');
-                return;
-            }
-
-            participants.push(name);
-            nameInput.value = '';
-            updateParticipantsUI();
-            saveTolocalStorage();
-        }
-
-        function removePerson(name) {
-            if (expenses.some(e => e.payer === name || e.participants.includes(name))) {
-                alert('Cannot remove this person as they are involved in expenses');
-                return;
-            }
-            participants = participants.filter(p => p !== name);
-            updateParticipantsUI();
-            saveTolocalStorage();
-        }
-
-        function updateParticipantsUI() {
-            // Update payer select
-            const payerSelect = document.getElementById('payer');
-            payerSelect.innerHTML = participants.map(name => 
-                `<option value="${name}">${name}</option>`
-            ).join('');
-
-            // Update participants checkboxes
-            const participantsList = document.getElementById('participantsList');
-            participantsList.innerHTML = participants.map(name => `
-                <label class="participant-label">
-                    <input type="checkbox" name="participant" value="${name}" onchange="updateSelectAllState()"> ${name}
-                    <button class="person-remove-btn" onclick="removePerson('${name}')" title="Remove ${name}">×</button>
-                </label>
-            `).join('');
-
-            // Reset select all checkbox
-            const selectAllCheckbox = document.getElementById('selectAll');
-            if (selectAllCheckbox) {
-                selectAllCheckbox.checked = false;
-            }
-        }
-
-        function toggleSelectAll() {
-            const selectAllCheckbox = document.getElementById('selectAll');
-            const participantCheckboxes = document.querySelectorAll('input[name="participant"]');
-            
-            participantCheckboxes.forEach(checkbox => {
-                checkbox.checked = selectAllCheckbox.checked;
+            expenses.forEach(expense => {
+                stats.total += expense.amount;
+                stats.byCategory[expense.category] = (stats.byCategory[expense.category] || 0) + expense.amount;
+                
+                const month = expense.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                stats.byMonth[month] = (stats.byMonth[month] || 0) + expense.amount;
             });
+
+            // Update statistics display
+            const statsDiv = document.getElementById('expenseStats');
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <h4>Total Expenses</h4>
+                    <p>${currentCurrency}${stats.total.toFixed(2)}</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Average per Expense</h4>
+                    <p>${currentCurrency}${(stats.total / expenses.length).toFixed(2)}</p>
+                </div>
+            `;
+
+            // Update chart
+            updateExpenseChart(stats);
         }
 
-        function updateSelectAllState() {
-            const selectAllCheckbox = document.getElementById('selectAll');
-            const participantCheckboxes = document.querySelectorAll('input[name="participant"]');
-            const allChecked = Array.from(participantCheckboxes).every(checkbox => checkbox.checked);
-            const anyChecked = Array.from(participantCheckboxes).some(checkbox => checkbox.checked);
+        function updateExpenseChart(stats) {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
             
-            selectAllCheckbox.checked = allChecked;
-            selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+            if (expenseChart) {
+                expenseChart.destroy();
+            }
+
+            expenseChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stats.byCategory),
+                    datasets: [{
+                        label: 'Expenses by Category',
+                        data: Object.values(stats.byCategory),
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
         }
 
         function addExpense() {
             const payer = document.getElementById('payer').value;
-            const description = document.getElementById('description').value;
+            const description = document.getElementById('description').value.trim();
             const amount = parseFloat(document.getElementById('amount').value);
             const selectedParticipants = Array.from(document.querySelectorAll('input[name="participant"]:checked'))
                                      .map(p => p.value);
             const expenseDate = new Date(document.getElementById('expenseDate').value);
+            const category = document.getElementById('category').value;
+            currentCurrency = document.getElementById('currency').value;
 
             if (!payer) {
                 alert('Please add at least one person first');
                 return;
             }
 
-            if (!description || !amount || selectedParticipants.length === 0) {
-                alert('Please fill all fields');
+            if (!amount || selectedParticipants.length === 0) {
+                alert('Please enter amount and select participants');
                 return;
             }
 
             const expense = {
                 payer,
-                description,
+                description: description || 'Unnamed Expense',
                 amount,
                 participants: selectedParticipants,
-                date: expenseDate
+                date: expenseDate,
+                category,
+                currency: currentCurrency
             };
 
             expenses.push(expense);
             calculateBalances();
+            updateExpenseStats();
             saveTolocalStorage();
             
             // Clear input fields
@@ -653,7 +718,6 @@
             document.getElementById('amount').value = '';
             document.querySelectorAll('input[name="participant"]').forEach(cb => cb.checked = false);
 
-            // Update report if visible
             if (document.getElementById('reportSection').style.display !== 'none') {
                 generateReport();
             }
@@ -749,6 +813,7 @@
                 participants = [];
                 localStorage.removeItem('expenses');
                 localStorage.removeItem('participants');
+                localStorage.removeItem('currency');
                 updateParticipantsUI();
                 calculateBalances();
                 document.getElementById('reportSection').style.display = 'none';
@@ -777,7 +842,7 @@
             const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2);
             let reportHTML = `
                 <h3>Expense Summary</h3>
-                <p>Total Expenses: ₹${totalExpenses}</p>
+                <p>Total Expenses: ${currentCurrency}${totalExpenses}</p>
                 <h3>Detailed Expenses</h3>
             `;
 
@@ -787,16 +852,24 @@
             sortedExpenses.forEach((expense, index) => {
                 const date = expense.date.toLocaleDateString();
                 const share = (expense.amount / expense.participants.length).toFixed(2);
+                const categoryEmoji = {
+                    'food': '🍽️',
+                    'travel': '✈️',
+                    'utilities': '🏠',
+                    'entertainment': '🎮',
+                    'shopping': '🛍️',
+                    'other': '📦'
+                }[expense.category] || '📦';
                 
                 // HTML display with delete button
                 reportHTML += `
                     <div class="expense-item tooltip" data-tooltip="Click × to delete">
-                        <strong>${expense.description}</strong><br>
+                        <strong>${categoryEmoji} ${expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}</strong><br>
                         Date: ${date}<br>
                         Paid by: ${expense.payer}<br>
-                        Amount: ₹${expense.amount}<br>
+                        Amount: ${currentCurrency}${expense.amount}<br>
                         Split between: ${expense.participants.join(', ')}<br>
-                        Each person's share: ₹${share}
+                        Each person's share: ${currentCurrency}${share}
                         <button class="delete-expense" onclick="deleteExpense(${index})" title="Delete expense">×</button>
                     </div>
                 `;
@@ -811,20 +884,28 @@
         function generateTextReport(sortedExpenses, totalExpenses) {
             let textContent = `SPLIT IT - EXPENSE REPORT\n`;
             textContent += `Generated on: ${new Date().toLocaleString()}\n\n`;
-            textContent += `TOTAL EXPENSES: ₹${totalExpenses}\n\n`;
+            textContent += `TOTAL EXPENSES: ${currentCurrency}${totalExpenses}\n\n`;
             textContent += `DETAILED EXPENSES:\n`;
             textContent += `----------------\n\n`;
 
             sortedExpenses.forEach(expense => {
                 const date = expense.date.toLocaleDateString();
                 const share = (expense.amount / expense.participants.length).toFixed(2);
+                const emoji = {
+                    'food': '🍽️',
+                    'travel': '✈️',
+                    'utilities': '🏠',
+                    'entertainment': '🎮',
+                    'shopping': '🛍️',
+                    'other': '📦'
+                }[expense.category] || '📦';
 
-                textContent += `Description: ${expense.description}\n`;
+                textContent += `Category: ${emoji} ${expense.category}\n`;
                 textContent += `Date: ${date}\n`;
                 textContent += `Paid by: ${expense.payer}\n`;
-                textContent += `Amount: ₹${expense.amount}\n`;
+                textContent += `Amount: ${currentCurrency}${expense.amount}\n`;
                 textContent += `Split between: ${expense.participants.join(', ')}\n`;
-                textContent += `Each person's share: ₹${share}\n`;
+                textContent += `Each person's share: ${currentCurrency}${share}\n`;
                 textContent += `----------------\n\n`;
             });
 
@@ -844,7 +925,7 @@
 
             for (const person in balances) {
                 const amount = balances[person].toFixed(2);
-                textContent += `${person}: ₹${amount}\n`;
+                textContent += `${person}: ${currentCurrency}${amount}\n`;
             }
 
             // Save the file
@@ -859,8 +940,172 @@
             document.body.removeChild(a);
         }
 
+        function addPerson() {
+            const nameInput = document.getElementById('newPersonName');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+
+            if (participants.includes(name)) {
+                alert('This person is already added');
+                return;
+            }
+
+            participants.push(name);
+            nameInput.value = '';
+            updateParticipantsUI();
+            saveTolocalStorage();
+        }
+
+        function removePerson(name) {
+            if (expenses.some(e => e.payer === name || e.participants.includes(name))) {
+                alert('Cannot remove this person as they are involved in expenses');
+                return;
+            }
+            participants = participants.filter(p => p !== name);
+            updateParticipantsUI();
+            saveTolocalStorage();
+        }
+
+        function updateParticipantsUI() {
+            // Update payer select
+            const payerSelect = document.getElementById('payer');
+            payerSelect.innerHTML = participants.map(name => 
+                `<option value="${name}">${name}</option>`
+            ).join('');
+
+            // Update participants checkboxes
+            const participantsList = document.getElementById('participantsList');
+            participantsList.innerHTML = participants.map(name => `
+                <label class="participant-label">
+                    <input type="checkbox" name="participant" value="${name}" onchange="updateSelectAllState()"> ${name}
+                    <button class="person-remove-btn" onclick="removePerson('${name}')" title="Remove ${name}">×</button>
+                </label>
+            `).join('');
+
+            // Reset select all checkbox
+            const selectAllCheckbox = document.getElementById('selectAll');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const participantCheckboxes = document.querySelectorAll('input[name="participant"]');
+            
+            participantCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+
+        function updateSelectAllState() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const participantCheckboxes = document.querySelectorAll('input[name="participant"]');
+            const allChecked = Array.from(participantCheckboxes).every(checkbox => checkbox.checked);
+            const anyChecked = Array.from(participantCheckboxes).some(checkbox => checkbox.checked);
+            
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+        }
+
+        // Register service worker only on http/https protocols
+        if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
         // Initialize the app when the page loads
         window.onload = initializeApp;
+
+        function copyReportToClipboard() {
+            if (expenses.length === 0) {
+                alert('No expenses to copy');
+                return;
+            }
+            
+            // Make sure the report section is visible
+            const reportSection = document.getElementById('reportSection');
+            reportSection.style.display = 'block';
+            
+            // Generate the report first to ensure it's up to date
+            generateReport();
+            
+            // Create a formatted text version of the report
+            let reportText = `SPLIT IT - EXPENSE REPORT\n`;
+            reportText += `Generated on: ${new Date().toLocaleString()}\n\n`;
+            
+            // Add total expenses
+            const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2);
+            reportText += `TOTAL EXPENSES: ${currentCurrency}${totalExpenses}\n\n`;
+            
+            // Add detailed expenses
+            reportText += `DETAILED EXPENSES:\n`;
+            reportText += `----------------\n\n`;
+            
+            // Sort expenses by date (newest first)
+            const sortedExpenses = [...expenses].sort((a, b) => b.date - a.date);
+            
+            sortedExpenses.forEach(expense => {
+                const date = expense.date.toLocaleDateString();
+                const share = (expense.amount / expense.participants.length).toFixed(2);
+                const emoji = {
+                    'food': '🍽️',
+                    'travel': '✈️',
+                    'utilities': '🏠',
+                    'entertainment': '🎮',
+                    'shopping': '🛍️',
+                    'other': '📦'
+                }[expense.category] || '📦';
+                
+                reportText += `Category: ${emoji} ${expense.category}\n`;
+                reportText += `Date: ${date}\n`;
+                reportText += `Paid by: ${expense.payer}\n`;
+                reportText += `Amount: ${currentCurrency}${expense.amount}\n`;
+                reportText += `Split between: ${expense.participants.join(', ')}\n`;
+                reportText += `Each person's share: ${currentCurrency}${share}\n`;
+                reportText += `----------------\n\n`;
+            });
+            
+            // Add balances
+            reportText += `CURRENT BALANCES:\n`;
+            reportText += `----------------\n`;
+            const balances = {};
+            participants.forEach(p => balances[p] = 0);
+            
+            expenses.forEach(expense => {
+                const share = expense.amount / expense.participants.length;
+                expense.participants.forEach(participant => {
+                    balances[participant] -= share;
+                });
+                balances[expense.payer] += expense.amount;
+            });
+            
+            for (const person in balances) {
+                const amount = balances[person].toFixed(2);
+                reportText += `${person}: ${currentCurrency}${amount}\n`;
+            }
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(reportText)
+                .then(() => {
+                    alert('Report copied to clipboard! You can now paste it anywhere to share.');
+                })
+                .catch(err => {
+                    console.error('Failed to copy report: ', err);
+                    alert('Failed to copy report. Please try again.');
+                });
+        }
     </script>
 </body>
 </html>
